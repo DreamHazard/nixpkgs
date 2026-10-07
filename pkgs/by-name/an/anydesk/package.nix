@@ -1,11 +1,9 @@
-{
-  lib,
+{ lib,
   stdenv,
   fetchurl,
   makeWrapper,
   makeDesktopItem,
   writeShellScript,
-  jq,
   atk,
   cairo,
   gdk-pixbuf,
@@ -17,6 +15,7 @@
   libGLU,
   libGL,
   pango,
+  libevdev,
   libxt,
   libxtst,
   libxrender,
@@ -31,13 +30,13 @@
   libice,
   libxkbfile,
   libxcb,
-  libevdev,
   minizip,
   net-tools,
   lsb-release,
   freetype,
   fontconfig,
   polkit,
+  polkit_gnome,
   pciutils,
   copyDesktopItems,
   pulseaudio,
@@ -49,8 +48,7 @@
 
 let
   description = "Desktop sharing application, providing remote support and online meetings";
-  pin = lib.importJSON ./pin.json;
-  inherit (pin) version;
+  version = "8.1.0";
   inherit (stdenv.hostPlatform) system;
   url =
     if system == "x86_64-linux" then
@@ -59,7 +57,13 @@ let
       "https://download.anydesk.com/rpi/anydesk-${version}-arm64.tar.gz"
     else
       throw "cannot install AnyDesk on ${system}";
-  hash = pin.${system};
+  hash =
+    if system == "x86_64-linux" then
+      "sha256-ImFfGsiqT5qy+nNE44NYvGIp5+C5c7e3+6BISDNgENs="
+    else if system == "aarch64-linux" then
+      "sha256-kAAAtJ+X5mZD/Jj2iL4rCcjmdE94qKTlp1oFdTaam2o="
+    else
+      throw "no hash for ${system}";
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "anydesk";
@@ -86,10 +90,11 @@ stdenv.mkDerivation (finalAttrs: {
     freetype
     fontconfig
     polkit
+    polkit_gnome
     pulseaudio
+    libevdev
     libxcb
     libxkbfile
-    libevdev
     libx11
     libxdamage
     libxext
@@ -162,10 +167,6 @@ stdenv.mkDerivation (finalAttrs: {
       } \
       --set GTK_THEME Adwaita
   '';
-
-  passthru = {
-    updateScript = ./update.sh;
-  };
 
   meta = {
     inherit description;
